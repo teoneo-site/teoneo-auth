@@ -35,7 +35,7 @@ pub async fn update_jwt_token(
             .nth(1)
             .unwrap_or("");
 
-        if !db::token::token_exists(&pool, refresh_tkn).await {
+        if !db::tokens::token_exists(&pool, refresh_tkn).await {
             return Err((
                 StatusCode::FORBIDDEN,
                 Json(AuthError::new(
@@ -52,7 +52,7 @@ pub async fn update_jwt_token(
             }
             Err(why) => {
                 eprintln!("Error verify refresh: {}", why);
-                db::token::delete_token(&pool, refresh_tkn).await.unwrap();
+                db::tokens::delete_token(&pool, refresh_tkn).await.unwrap();
                 return Err((
                     StatusCode::FORBIDDEN,
                     Json(AuthError::new(
@@ -84,7 +84,7 @@ pub async fn logout(
     State(pool): State<MySqlPool>,
     Json(data): Json<LogoutBody>,
 ) -> Result<Response, Response> {
-    if let Err(why) = db::token::delete_token(&pool, &data.refresh_token).await {
+    if let Err(why) = db::tokens::delete_token(&pool, &data.refresh_token).await {
         eprintln!("Err deleting rtoken: {}", why);
     }
     Ok((StatusCode::OK, "Error deleting").into_response())

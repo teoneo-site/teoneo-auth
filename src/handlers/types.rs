@@ -11,7 +11,7 @@ pub struct TokensPayload {
 }
 
 // Error types
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)] // Don't know if it is needed at all, for now let it be
 pub enum AuthErrors {
     JwtTokenExpired,
     RefreshTokenExpired,

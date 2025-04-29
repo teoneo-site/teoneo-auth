@@ -36,7 +36,7 @@ pub async fn register(
     }
     let hashed_password = crypt::password::hash_password(&user_data.password);
 
-    match db::user::create_user(
+    match db::users::create_user(
         &pool,
         &user_data.username,
         &user_data.email,
@@ -48,9 +48,9 @@ pub async fn register(
             let jwt_token = crypt::token::make_jwt_token(id);
             let refresh_token = crypt::token::make_refresh_token(id);
 
-            db::token::create_token(&pool, id, &refresh_token)
+            db::tokens::create_token(&pool, id, &refresh_token)
                 .await
-                .unwrap();
+                .unwrap(); // May wanna handle this
 
             let resp = TokensPayload {
                 jwt_token,

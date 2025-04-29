@@ -1,2 +1,2 @@
-pub mod token;
-pub mod user;
+pub mod tokens;
+pub mod users;

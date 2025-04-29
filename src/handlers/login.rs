@@ -32,7 +32,7 @@ pub async fn login(
         )
             .into_response());
     }
-    let user_id = match db::user::id_by_email(&pool, &user_data.email).await {
+    let user_id = match db::users::id_by_email(&pool, &user_data.email).await {
         Ok(id) => id,
         Err(why) => {
             eprintln!("{}", why);
@@ -46,16 +46,16 @@ pub async fn login(
                 .into_response());
         }
     };
-    let user_password_hash = db::user::get_password_hash(&pool, user_id).await.unwrap(); // User exists 100% by now so does the password hash
+    let user_password_hash = db::users::get_password_hash(&pool, user_id).await.unwrap(); // User exists 100% by now so does the password hash
 
     match crypt::password::verify_password(&user_data.password, &user_password_hash) {
         Ok(()) => {
             let jwt_token = crypt::token::make_jwt_token(user_id);
             let refresh_token = crypt::token::make_refresh_token(user_id);
 
-            db::token::create_token(&pool, user_id, &refresh_token)
+            db::tokens::create_token(&pool, user_id, &refresh_token)
                 .await
-                .unwrap();
+                .unwrap(); // I mean it cant really fail but anyway TODO: handle this
 
             let resp = TokensPayload {
                 jwt_token,
