@@ -1,6 +1,6 @@
 use axum::{
-    extract::{Query, State},
-    http::{header::AUTHORIZATION, HeaderMap, StatusCode},
+    extract::State,
+    http::StatusCode,
     response::{IntoResponse, Response},
     Json,
 };
@@ -54,7 +54,9 @@ pub async fn login(
             let jwt_token = crypt::token::make_jwt_token(user_id);
             let refresh_token = crypt::token::make_refresh_token(user_id);
 
-            db::token::create_token(&pool, user_id, &refresh_token).await.unwrap();
+            db::token::create_token(&pool, user_id, &refresh_token)
+                .await
+                .unwrap();
 
             let resp = TokensPayload {
                 jwt_token,

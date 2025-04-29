@@ -1,11 +1,11 @@
 use std::time::Duration;
 
-use axum::{extract::DefaultBodyLimit, Router};
+use axum::Router;
 use sqlx::mysql::MySqlPoolOptions;
 
-mod handlers;
 mod crypt;
 mod db;
+mod handlers;
 
 // Если с каких-то других микросервисов будет приходить ошибка 401 - значит нужно обновить JWT Token
 // И только при 403 ошибке нужно принудительно выкидывать пользователя из аккаунта
@@ -26,12 +26,18 @@ async fn main() {
         .expect("Cant connect");
 
     let app = Router::new()
-    .route("/register", axum::routing::post(handlers::register::register))
-    .route("/login", axum::routing::post(handlers::login::login))
-    .route("/token", axum::routing::get(handlers::token::update_jwt_token))
-    .route("/validate", axum::routing::get(handlers::token::validate))
-    .route("/logout", axum::routing::post(handlers::token::logout))
-    .with_state(mysql_pool);
+        .route(
+            "/register",
+            axum::routing::post(handlers::register::register),
+        )
+        .route("/login", axum::routing::post(handlers::login::login))
+        .route(
+            "/token",
+            axum::routing::get(handlers::token::update_jwt_token),
+        )
+        .route("/validate", axum::routing::get(handlers::token::validate))
+        .route("/logout", axum::routing::post(handlers::token::logout))
+        .with_state(mysql_pool);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8081").await.unwrap(); // TODO: port from dotenv
     axum::serve(listener, app).await.unwrap();

@@ -1,4 +1,4 @@
 pub mod login;
 pub mod register;
-pub mod types;
 pub mod token;
+pub mod types;

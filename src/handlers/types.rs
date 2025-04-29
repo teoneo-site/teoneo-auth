@@ -2,15 +2,13 @@ use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
 
-
-// Payloads 
+// Payloads
 
 #[derive(Serialize)]
 pub struct TokensPayload {
     pub jwt_token: String,
     pub refresh_token: String,
 }
-
 
 // Error types
 #[derive(Serialize, Deserialize)]
@@ -49,10 +47,3 @@ impl Display for AuthErrors {
         }
     }
 }
-
-
-
-
-
-
-

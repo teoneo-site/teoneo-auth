@@ -1,6 +1,6 @@
 use axum::{
-    extract::{Query, State},
-    http::{header::AUTHORIZATION, HeaderMap, StatusCode},
+    extract::State,
+    http::StatusCode,
     response::{IntoResponse, Response},
     Json,
 };
@@ -17,7 +17,6 @@ pub struct UserRegister {
     pub email: String,
     pub password: String,
 }
-
 
 pub async fn register(
     State(pool): State<MySqlPool>,
@@ -50,7 +49,9 @@ pub async fn register(
             let jwt_token = crypt::token::make_jwt_token(id);
             let refresh_token = crypt::token::make_refresh_token(id);
 
-            db::token::create_token(&pool, id, &refresh_token).await.unwrap();
+            db::token::create_token(&pool, id, &refresh_token)
+                .await
+                .unwrap();
 
             let resp = TokensPayload {
                 jwt_token,

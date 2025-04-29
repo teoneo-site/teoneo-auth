@@ -18,12 +18,15 @@ pub struct QueryValidate {
 
 #[derive(Serialize, Deserialize)]
 pub struct LogoutBody {
-    refresh_token: String
+    refresh_token: String,
 }
 
-// /token [GET] - Эндпоинт, предназначенный для обновления expired JWT Token'а с помощью Refresh Token 
+// /token [GET] - Эндпоинт, предназначенный для обновления expired JWT Token'а с помощью Refresh Token
 // Если запрос сюда возвращает 403, то со стороны фронтенд нужно выйти из аккаунта, так как refresh token закончился
-pub async fn update_jwt_token(State(pool): State<MySqlPool>, headers: HeaderMap) -> Result<Response, Response> {
+pub async fn update_jwt_token(
+    State(pool): State<MySqlPool>,
+    headers: HeaderMap,
+) -> Result<Response, Response> {
     if let Some(authorization) = headers.get(AUTHORIZATION) {
         let refresh_tkn = authorization
             .to_str()
@@ -41,14 +44,13 @@ pub async fn update_jwt_token(State(pool): State<MySqlPool>, headers: HeaderMap)
                 )),
             )
                 .into_response());
-        } 
+        }
         match crypt::token::verify_refresh_token(refresh_tkn) {
             Ok(id) => {
                 let jwt_token = crypt::token::make_jwt_token(id);
                 return Ok((StatusCode::OK, jwt_token.to_string()).into_response());
             }
             Err(why) => {
-
                 eprintln!("Error verify refresh: {}", why);
                 db::token::delete_token(&pool, refresh_tkn).await.unwrap();
                 return Err((
@@ -78,7 +80,10 @@ pub async fn validate(Query(data): Query<QueryValidate>) -> Result<Response, Res
 }
 
 // /logout [POST] - эндпоинт для выхода из аккаунта
-pub async fn logout(State(pool): State<MySqlPool>, Json(data) : Json<LogoutBody>) -> Result<Response, Response> {
+pub async fn logout(
+    State(pool): State<MySqlPool>,
+    Json(data): Json<LogoutBody>,
+) -> Result<Response, Response> {
     if let Err(why) = db::token::delete_token(&pool, &data.refresh_token).await {
         eprintln!("Err deleting rtoken: {}", why);
     }

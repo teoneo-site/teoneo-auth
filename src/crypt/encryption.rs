@@ -1,7 +1,8 @@
 use aes_gcm::{aead::Aead, AeadCore, Aes256Gcm, Key, KeyInit, Nonce};
 
-pub fn aes_encrypt_text(plaintext: &str) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
-    // returns Encrypted password, nonce
+#[rustfmt::skip]
+pub fn aes_encrypt_text(plaintext: &str) -> anyhow::Result<(Vec<u8> /* Hash str */, Vec<u8> /* Nonce */)> {
+    #[allow(non_snake_case)]
     let AES_KEY = std::env::var("AES_KEY").unwrap();
     let key = Key::<Aes256Gcm>::from_slice(AES_KEY.as_bytes());
     let cipher = Aes256Gcm::new(&key);
@@ -14,6 +15,7 @@ pub fn aes_encrypt_text(plaintext: &str) -> anyhow::Result<(Vec<u8>, Vec<u8>)> {
 }
 
 pub fn aes_decrypt_text(ciphertext: &[u8], nonce: &[u8]) -> anyhow::Result<String> {
+    #[allow(non_snake_case)]
     let AES_KEY = std::env::var("AES_KEY").unwrap();
     let key = Key::<Aes256Gcm>::from_slice(AES_KEY.as_bytes());
     let cipher = Aes256Gcm::new(&key);
