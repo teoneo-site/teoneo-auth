@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use axum::Router;
 use sqlx::mysql::MySqlPoolOptions;
+use tower_http::cors::CorsLayer;
 
 mod crypt;
 mod db;
@@ -16,7 +17,7 @@ async fn main() {
     tracing_subscriber::fmt::init();
     dotenv::dotenv().ok();
 
-    let connect_str = "mysql://klewy:root@localhost:3306/pm"; // TODO: get from dotenv
+    let connect_str = "mysql://klewy:root@localhost:3306/teoneo"; // TODO: get from dotenv
 
     let mysql_pool = MySqlPoolOptions::new()
         .max_connections(10)
@@ -24,6 +25,7 @@ async fn main() {
         .connect(connect_str)
         .await
         .expect("Cant connect");
+
 
     let app = Router::new()
         .route(
@@ -37,6 +39,7 @@ async fn main() {
         )
         .route("/validate", axum::routing::get(handlers::token::validate))
         .route("/logout", axum::routing::post(handlers::token::logout))
+        .layer(CorsLayer::permissive())
         .with_state(mysql_pool);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8081").await.unwrap(); // TODO: port from dotenv

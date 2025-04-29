@@ -32,7 +32,6 @@ pub async fn login(
         )
             .into_response());
     }
-
     let user_id = match db::user::id_by_email(&pool, &user_data.email).await {
         Ok(id) => id,
         Err(why) => {

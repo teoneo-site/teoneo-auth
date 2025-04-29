@@ -34,7 +34,6 @@ pub async fn register(
         )
             .into_response());
     }
-
     let hashed_password = crypt::password::hash_password(&user_data.password);
 
     match db::user::create_user(
