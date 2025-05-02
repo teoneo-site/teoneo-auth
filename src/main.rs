@@ -46,16 +46,16 @@ async fn main() {
 
     let app = Router::new()
         .route(
-            "/register",
+            "/auth/register",
             axum::routing::post(handlers::register::register),
         )
-        .route("/login", axum::routing::post(handlers::login::login))
+        .route("/auth/login", axum::routing::post(handlers::login::login))
         .route(
-            "/token",
+            "/auth/token",
             axum::routing::get(handlers::token::update_jwt_token),
         )
-        .route("/validate", axum::routing::get(handlers::token::validate))
-        .route("/logout", axum::routing::post(handlers::token::logout))
+        .route("/auth/validate", axum::routing::get(handlers::token::validate))
+        .route("/auth/logout", axum::routing::post(handlers::token::logout))
         .layer(CorsLayer::permissive()) // Для того чтоб CORS мозг не ебал
         .with_state(mysql_pool);
 
