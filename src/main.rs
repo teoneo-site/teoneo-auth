@@ -28,13 +28,12 @@ crypt - модуль, в котором находятся различные т
 3. token - шифрование JWt и Refresh tokenов и их проверка на валидность (т.е не подделан и срок годности не истек)
 */
 
-
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init(); // Для логирования всяких штук
     dotenv::dotenv().ok();
 
-    let connect_str = "mysql://klewy:root@localhost:3306/teoneo"; // TODO: get from dotenv
+    let connect_str = "mysql://root:root@172.17.0.1:3306/teoneo"; // TODO: get from dotenv
 
     let mysql_pool = MySqlPoolOptions::new()
         .max_connections(10) // Надо подумать какое число тут использовать, мб max_hardware_concurrency()
@@ -42,7 +41,6 @@ async fn main() {
         .connect(connect_str)
         .await
         .expect("Cant connect");
-
 
     let app = Router::new()
         .route(
@@ -54,7 +52,10 @@ async fn main() {
             "/auth/token",
             axum::routing::get(handlers::token::update_jwt_token),
         )
-        .route("/auth/validate", axum::routing::get(handlers::token::validate))
+        .route(
+            "/auth/validate",
+            axum::routing::get(handlers::token::validate),
+        )
         .route("/auth/logout", axum::routing::post(handlers::token::logout))
         .layer(CorsLayer::permissive()) // Для того чтоб CORS мозг не ебал
         .with_state(mysql_pool);
