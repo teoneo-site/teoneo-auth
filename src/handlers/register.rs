@@ -9,7 +9,7 @@ use sqlx::MySqlPool;
 
 use crate::{crypt, db};
 
-use super::types::{AuthError, AuthErrors, TokensPayload};
+use super::{types::TokensPayload, ErrorResponse, ErrorTypes, ResponseBody};
 
 #[derive(Deserialize, Serialize)]
 pub struct UserRegister {
@@ -28,9 +28,10 @@ pub async fn register(
             || user_data.password.len() > 64)
         || (user_data.email.is_empty())
     {
-        return Err((
+        return Err(ResponseBody::new(
             StatusCode::BAD_REQUEST,
-            Json(AuthError::new(AuthErrors::BadData, "Provided data is bad")),
+            None,
+            ErrorResponse::new(ErrorTypes::BadData, "Provided data is bad")
         )
             .into_response());
     }
@@ -56,16 +57,17 @@ pub async fn register(
                 jwt_token,
                 refresh_token,
             };
-            return Ok((StatusCode::CREATED, Json(resp)).into_response());
+            return Ok(ResponseBody::new(StatusCode::CREATED, None, resp).into_response());
         }
         Err(why) => {
             eprintln!("Error registering: {}", why);
-            return Err((
+            return Err(ResponseBody::new(
                 StatusCode::CONFLICT,
-                Json(AuthError::new(
-                    AuthErrors::UserAlreadyExists,
+                None,
+                ErrorResponse::new(
+                    ErrorTypes::UserAlreadyExists,
                     "User is already registered",
-                )),
+                ),
             )
                 .into_response());
         }

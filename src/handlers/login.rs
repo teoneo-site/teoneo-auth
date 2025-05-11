@@ -9,7 +9,7 @@ use sqlx::MySqlPool;
 
 use crate::{crypt, db};
 
-use super::types::{AuthError, AuthErrors, TokensPayload};
+use super::{types::TokensPayload, ErrorResponse, ErrorTypes, ResponseBody};
 
 #[derive(Serialize, Deserialize)]
 pub struct UserLogin {
@@ -26,24 +26,26 @@ pub async fn login(
         || user_data.password.len() > 64)
         || (user_data.email.is_empty())
     {
-        return Err((
+        return Err(ResponseBody::new(
             StatusCode::BAD_REQUEST,
-            Json(AuthError::new(AuthErrors::BadData, "Provided data is bad")),
+            None,
+            ErrorResponse::new(ErrorTypes::BadData, "Provided data is bad"),
         )
-            .into_response());
+        .into_response());
     }
     let user_id = match db::users::id_by_email(&pool, &user_data.email).await {
         Ok(id) => id,
         Err(why) => {
             eprintln!("{}", why);
-            return Err((
+            return Err(ResponseBody::new(
                 StatusCode::BAD_REQUEST,
-                Json(AuthError::new(
-                    AuthErrors::UserNotExists,
+                None,
+                ErrorResponse::new(
+                    ErrorTypes::UserNotExists,
                     "User does not exist, please register",
-                )),
+                ),
             )
-                .into_response());
+            .into_response());
         }
     };
     let user_password_hash = db::users::get_password_hash(&pool, user_id).await.unwrap(); // User exists 100% by now so does the password hash
@@ -61,16 +63,17 @@ pub async fn login(
                 jwt_token,
                 refresh_token,
             };
-            return Ok((StatusCode::OK, Json(resp)).into_response());
+            return Ok(ResponseBody::new(StatusCode::OK, None, resp).into_response());
         }
         Err(why) => {
             eprintln!("Error verify: {}", why);
-            return Err((
+            return Err(ResponseBody::new(
                 StatusCode::UNAUTHORIZED,
-                Json(AuthError::new(
-                    AuthErrors::InvalidCreds,
+                None,
+                ErrorResponse::new(
+                    ErrorTypes::BadData,
                     "Invalid credentials",
-                )),
+                )
             )
                 .into_response());
         }

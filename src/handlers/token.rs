@@ -9,7 +9,7 @@ use sqlx::MySqlPool;
 
 use crate::{crypt, db};
 
-use super::types::{AuthError, AuthErrors};
+use super::{ErrorResponse, ErrorTypes, ResponseBody};
 
 #[derive(Serialize, Deserialize)]
 pub struct QueryValidate {
@@ -36,12 +36,13 @@ pub async fn update_jwt_token(
             .unwrap_or("");
 
         if !db::tokens::token_exists(&pool, refresh_tkn).await {
-            return Err((
+            return Err(ResponseBody::new(
                 StatusCode::FORBIDDEN,
-                Json(AuthError::new(
-                    AuthErrors::RefreshTokenExpired,
+                None,
+                ErrorResponse::new(
+                    ErrorTypes::RefreshTokenExpired,
                     "Please, log in again",
-                )),
+                ),
             )
                 .into_response());
         }
@@ -53,12 +54,13 @@ pub async fn update_jwt_token(
             Err(why) => {
                 eprintln!("Error verify refresh: {}", why);
                 db::tokens::delete_token(&pool, refresh_tkn).await.unwrap();
-                return Err((
+                return Err(ResponseBody::new(
                     StatusCode::FORBIDDEN,
-                    Json(AuthError::new(
-                        AuthErrors::RefreshTokenExpired,
+                    None,
+                    ErrorResponse::new(
+                        ErrorTypes::RefreshTokenExpired,
                         "Please, log in again",
-                    )),
+                    ),
                 )
                     .into_response());
             }
@@ -71,10 +73,10 @@ pub async fn update_jwt_token(
 // Что нужно обновить JWT Токен через /token
 pub async fn validate(Query(data): Query<QueryValidate>) -> Result<Response, Response> {
     match crypt::token::verify_jwt_token(&data.token) {
-        Ok(_) => return Ok((StatusCode::OK, "Token was verified").into_response()),
+        Ok(_) => return Ok((StatusCode::OK).into_response()),
         Err(why) => {
             eprintln!("Error {}", why);
-            return Err((StatusCode::UNAUTHORIZED, "Token was not verified").into_response());
+            return Err(ResponseBody::new(StatusCode::UNAUTHORIZED, None, ErrorResponse::new(ErrorTypes::JwtTokenExpired, "Update JWT token")).into_response());
         }
     };
 }
@@ -87,5 +89,5 @@ pub async fn logout(
     if let Err(why) = db::tokens::delete_token(&pool, &data.refresh_token).await {
         eprintln!("Err deleting rtoken: {}", why);
     }
-    Ok((StatusCode::OK, "Error deleting").into_response())
+    Ok((StatusCode::OK).into_response())
 }
