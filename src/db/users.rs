@@ -34,20 +34,3 @@ pub async fn get_password_hash(pool: &MySqlPool, id: u32) -> anyhow::Result<Stri
     Ok(hash)
 }
 
-pub async fn set_nonce(pool: &MySqlPool, nonce: &[u8], id: u32) -> anyhow::Result<()> {
-    sqlx::query("UPDATE users SET nonce = ? WHERE id = ?")
-        .bind(nonce)
-        .bind(id)
-        .execute(pool)
-        .await?;
-    Ok(())
-}
-
-pub async fn nonce(pool: &MySqlPool, id: u32) -> anyhow::Result<Vec<u8>> {
-    let row = sqlx::query("SELECT nonce FROM users WHERE id = ?")
-        .bind(id)
-        .fetch_one(pool)
-        .await?;
-    let resp: Vec<u8> = row.try_get(0).unwrap_or(Vec::new());
-    Ok(resp)
-}

@@ -9,7 +9,7 @@ use sqlx::MySqlPool;
 
 use crate::{crypt, db};
 
-use super::{ErrorResponse, ErrorTypes, ResponseBody};
+use super::{ErrorResponse, ErrorTypes};
 
 #[derive(Serialize, Deserialize)]
 pub struct QueryValidate {
@@ -36,13 +36,12 @@ pub async fn update_jwt_token(
             .unwrap_or("");
 
         if !db::tokens::token_exists(&pool, refresh_tkn).await {
-            return Err(ResponseBody::new(
+            return Err((
                 StatusCode::FORBIDDEN,
-                None,
-                ErrorResponse::new(
+                axum::Json(ErrorResponse::new(
                     ErrorTypes::RefreshTokenExpired,
                     "Please, log in again",
-                ),
+                )),
             )
                 .into_response());
         }
@@ -54,19 +53,18 @@ pub async fn update_jwt_token(
             Err(why) => {
                 eprintln!("Error verify refresh: {}", why);
                 db::tokens::delete_token(&pool, refresh_tkn).await.unwrap();
-                return Err(ResponseBody::new(
+                return Err((
                     StatusCode::FORBIDDEN,
-                    None,
-                    ErrorResponse::new(
+                    axum::Json(ErrorResponse::new(
                         ErrorTypes::RefreshTokenExpired,
                         "Please, log in again",
-                    ),
+                    )),
                 )
                     .into_response());
             }
         }
     }
-    return Err((StatusCode::BAD_REQUEST, "No token in headers".to_string()).into_response());
+    return Err((StatusCode::BAD_REQUEST, axum::Json(ErrorResponse::new(ErrorTypes::BadData, "Token is not suplied"))).into_response());
 }
 
 // /validate [GET] - Эндпоинт для проверки валидности JWT Токена, если возвращает 401, это значит
@@ -76,7 +74,7 @@ pub async fn validate(Query(data): Query<QueryValidate>) -> Result<Response, Res
         Ok(_) => return Ok((StatusCode::OK).into_response()),
         Err(why) => {
             eprintln!("Error {}", why);
-            return Err(ResponseBody::new(StatusCode::UNAUTHORIZED, None, ErrorResponse::new(ErrorTypes::JwtTokenExpired, "Update JWT token")).into_response());
+            return Err((StatusCode::UNAUTHORIZED, axum::Json(ErrorResponse::new(ErrorTypes::JwtTokenExpired, "Update JWT token"))).into_response());
         }
     };
 }

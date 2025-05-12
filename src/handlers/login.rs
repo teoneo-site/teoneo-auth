@@ -9,7 +9,7 @@ use sqlx::MySqlPool;
 
 use crate::{crypt, db};
 
-use super::{types::TokensPayload, ErrorResponse, ErrorTypes, ResponseBody};
+use super::{types::TokensPayload, ErrorResponse, ErrorTypes};
 
 #[derive(Serialize, Deserialize)]
 pub struct UserLogin {
@@ -26,10 +26,9 @@ pub async fn login(
         || user_data.password.len() > 64)
         || (user_data.email.is_empty())
     {
-        return Err(ResponseBody::new(
+        return Err((
             StatusCode::BAD_REQUEST,
-            None,
-            ErrorResponse::new(ErrorTypes::BadData, "Provided data is bad"),
+            axum::Json(ErrorResponse::new(ErrorTypes::BadData, "Provided data is bad")),
         )
         .into_response());
     }
@@ -37,13 +36,12 @@ pub async fn login(
         Ok(id) => id,
         Err(why) => {
             eprintln!("{}", why);
-            return Err(ResponseBody::new(
+            return Err((
                 StatusCode::BAD_REQUEST,
-                None,
-                ErrorResponse::new(
+                axum::Json(ErrorResponse::new(
                     ErrorTypes::UserNotExists,
                     "User does not exist, please register",
-                ),
+                )),
             )
             .into_response());
         }
@@ -63,17 +61,16 @@ pub async fn login(
                 jwt_token,
                 refresh_token,
             };
-            return Ok(ResponseBody::new(StatusCode::OK, None, resp).into_response());
+            return Ok((StatusCode::OK, axum::Json(resp)).into_response());
         }
         Err(why) => {
             eprintln!("Error verify: {}", why);
-            return Err(ResponseBody::new(
+            return Err((
                 StatusCode::UNAUTHORIZED,
-                None,
-                ErrorResponse::new(
+                axum::Json(ErrorResponse::new(
                     ErrorTypes::BadData,
                     "Invalid credentials",
-                )
+                ))
             )
                 .into_response());
         }
