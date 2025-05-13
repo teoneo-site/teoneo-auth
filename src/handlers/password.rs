@@ -26,7 +26,7 @@ pub async fn validate_reset(
     State(pool): State<MySqlPool>,
     Query(token_data): Query<ValidateTokenBody>,
 ) -> Result<Response, Response> {
-    match db::reset_tokens::validate_token(&pool, token_data.token).await {
+    match db::reset_tokens::validate_token(&pool, &token_data.token).await {
         Ok(_) => return Ok((StatusCode::OK).into_response()),
         Err(why) => {
             eprintln!("{}", why);
@@ -122,14 +122,16 @@ pub struct ResetPasswordBody {
 }
 
 pub async fn reset_password(State(pool): State<MySqlPool>, Json(data) : Json<ResetPasswordBody>) -> anyhow::Result<Response, Response> {
-    match db::reset_tokens::validate_token(&pool, data.token).await {
+    match db::reset_tokens::validate_token(&pool, &data.token).await {
         Ok(email) => {
             let hashed_password = crypt::password::hash_password(&data.password);
             db::users::set_password_by_email(&pool, &email, &hashed_password).await.unwrap();  
+            db::reset_tokens::remove_token(&pool, &data.token).await;
             return Ok((StatusCode::OK).into_response())
         },
         Err(why) => {
             eprintln!("{}", why);
+            db::reset_tokens::remove_token(&pool, &data.token).await;
             return Err((
                 StatusCode::FORBIDDEN,
                 axum::Json(ErrorResponse::new(
