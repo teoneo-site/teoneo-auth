@@ -30,8 +30,11 @@ pub async fn register(
     {
         return Err((
             StatusCode::BAD_REQUEST,
-            axum::Json(ErrorResponse::new(ErrorTypes::BadData, "Provided data is bad")
-        ))
+            axum::Json(ErrorResponse::new(
+                ErrorTypes::BadData,
+                "Provided data is bad",
+            )),
+        )
             .into_response());
     }
     let hashed_password = crypt::password::hash_password(&user_data.password);

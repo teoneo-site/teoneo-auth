@@ -1,29 +1,14 @@
-use aes_gcm::{aead::Aead, AeadCore, Aes256Gcm, Key, KeyInit, Nonce};
+use rand::{distr::Alphanumeric, Rng};
+use sha2::{Digest, Sha256};
 
-#[rustfmt::skip]
-pub fn aes_encrypt_text(plaintext: &str) -> anyhow::Result<(Vec<u8> /* Hash str */, Vec<u8> /* Nonce */)> {
-    #[allow(non_snake_case)]
-    let AES_KEY = std::env::var("AES_KEY").unwrap();
-    let key = Key::<Aes256Gcm>::from_slice(AES_KEY.as_bytes());
-    let cipher = Aes256Gcm::new(&key);
-    let nonce = Aes256Gcm::generate_nonce(&mut aes_gcm::aead::OsRng);
-    let ciphertext = cipher
-        .encrypt(&nonce, plaintext.as_ref())
-        .map_err(|_| anyhow::anyhow!("Could not encrypt"))?;
-
-    Ok((ciphertext, nonce.to_vec()))
-}
-
-pub fn aes_decrypt_text(ciphertext: &[u8], nonce: &[u8]) -> anyhow::Result<String> {
-    #[allow(non_snake_case)]
-    let AES_KEY = std::env::var("AES_KEY").unwrap();
-    let key = Key::<Aes256Gcm>::from_slice(AES_KEY.as_bytes());
-    let cipher = Aes256Gcm::new(&key);
-
-    let nonce = Nonce::from_slice(nonce);
-    let plaintext = cipher
-        .decrypt(nonce, ciphertext.as_ref())
-        .map_err(|_| anyhow::anyhow!("Could not encrypt"))?;
-
-    Ok(String::from_utf8_lossy(&plaintext).to_string())
+pub fn create_reset_token() -> String {
+    let s: String = rand::rng()
+        .sample_iter(&Alphanumeric)
+        .take(16)
+        .map(char::from)
+        .collect();
+    let mut hasher = Sha256::new();
+    hasher.update(s.as_bytes());
+    let result = hasher.finalize();
+    hex::encode(result)
 }

@@ -64,7 +64,14 @@ pub async fn update_jwt_token(
             }
         }
     }
-    return Err((StatusCode::BAD_REQUEST, axum::Json(ErrorResponse::new(ErrorTypes::BadData, "Token is not suplied"))).into_response());
+    return Err((
+        StatusCode::BAD_REQUEST,
+        axum::Json(ErrorResponse::new(
+            ErrorTypes::BadData,
+            "Token is not suplied",
+        )),
+    )
+        .into_response());
 }
 
 // /validate [GET] - Эндпоинт для проверки валидности JWT Токена, если возвращает 401, это значит
@@ -74,7 +81,14 @@ pub async fn validate(Query(data): Query<QueryValidate>) -> Result<Response, Res
         Ok(_) => return Ok((StatusCode::OK).into_response()),
         Err(why) => {
             eprintln!("Error {}", why);
-            return Err((StatusCode::UNAUTHORIZED, axum::Json(ErrorResponse::new(ErrorTypes::JwtTokenExpired, "Update JWT token"))).into_response());
+            return Err((
+                StatusCode::UNAUTHORIZED,
+                axum::Json(ErrorResponse::new(
+                    ErrorTypes::JwtTokenExpired,
+                    "Update JWT token",
+                )),
+            )
+                .into_response());
         }
     };
 }

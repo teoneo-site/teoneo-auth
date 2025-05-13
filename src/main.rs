@@ -33,7 +33,7 @@ async fn main() {
     tracing_subscriber::fmt::init(); // Для логирования всяких штук
     dotenv::dotenv().ok();
 
-    let connect_str = "mysql://root:root@172.17.0.1:3306/teoneo"; // TODO: get from dotenv
+    let connect_str = "mysql://root:root@localhost:3306/teoneo"; // TODO: get from dotenv
 
     let mysql_pool = MySqlPoolOptions::new()
         .max_connections(10) // Надо подумать какое число тут использовать, мб max_hardware_concurrency()
@@ -57,6 +57,15 @@ async fn main() {
             axum::routing::get(handlers::token::validate),
         )
         .route("/auth/logout", axum::routing::post(handlers::token::logout))
+        .route(
+            "/auth/reset/validate",
+            axum::routing::get(handlers::password::validate_reset),
+        )
+        .route(
+            "/auth/reset",
+            axum::routing::post(handlers::password::create_reset),
+        )
+        .route("/auth/reset/password", axum::routing::post(handlers::password::reset_password))
         .layer(CorsLayer::permissive()) // Для того чтоб CORS мозг не ебал
         .with_state(mysql_pool);
 

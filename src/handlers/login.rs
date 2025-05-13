@@ -28,9 +28,12 @@ pub async fn login(
     {
         return Err((
             StatusCode::BAD_REQUEST,
-            axum::Json(ErrorResponse::new(ErrorTypes::BadData, "Provided data is bad")),
+            axum::Json(ErrorResponse::new(
+                ErrorTypes::BadData,
+                "Provided data is bad",
+            )),
         )
-        .into_response());
+            .into_response());
     }
     let user_id = match db::users::id_by_email(&pool, &user_data.email).await {
         Ok(id) => id,
@@ -43,7 +46,7 @@ pub async fn login(
                     "User does not exist, please register",
                 )),
             )
-            .into_response());
+                .into_response());
         }
     };
     let user_password_hash = db::users::get_password_hash(&pool, user_id).await.unwrap(); // User exists 100% by now so does the password hash
@@ -70,7 +73,7 @@ pub async fn login(
                 axum::Json(ErrorResponse::new(
                     ErrorTypes::BadData,
                     "Invalid credentials",
-                ))
+                )),
             )
                 .into_response());
         }

@@ -3,6 +3,7 @@ use std::fmt::Display;
 use serde::{Deserialize, Serialize};
 
 pub mod login;
+pub mod password;
 pub mod register;
 pub mod token;
 pub mod types;
@@ -35,6 +36,7 @@ pub enum ErrorTypes {
     UserNotExists,
     UserAlreadyExists,
     RefreshTokenExpired,
+    InvalidResetToken,
 }
 
 impl Display for ErrorTypes {
@@ -47,6 +49,7 @@ impl Display for ErrorTypes {
             Self::UserNotExists => write!(f, "user_not_exists"),
             Self::UserAlreadyExists => write!(f, "user_alread_exists"),
             Self::RefreshTokenExpired => write!(f, "refresh_token_expired"),
+            Self::InvalidResetToken => write!(f, "invalid_reset_token"),
         }
     }
 }
