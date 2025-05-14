@@ -14,7 +14,7 @@ use sha2::{Digest, Sha256};
 use sqlx::MySqlPool;
 
 use crate::{
-    crypt, db, handlers::{ErrorResponse, ErrorTypes}
+    crypt::{self, encryption::create_reset_token}, db, handlers::{ErrorResponse, ErrorTypes}
 };
 
 #[derive(Serialize, Deserialize)]
@@ -63,15 +63,7 @@ pub async fn create_reset(
             .into_response());
     }
 
-    let s: String = rand::rng()
-        .sample_iter(&Alphanumeric)
-        .take(16)
-        .map(char::from)
-        .collect();
-    let mut hasher = Sha256::new();
-    hasher.update(s.as_bytes());
-    let result = hasher.finalize();
-    let token = hex::encode(result);
+    let token = create_reset_token();
 
     match db::reset_tokens::insert_token(&pool, &data.email, &token).await {
         Ok(_) => {
