@@ -42,7 +42,11 @@ pub async fn email_exists(pool: &MySqlPool, email: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn set_password_by_email(pool: &MySqlPool, email: &str, password_auth: &str) -> anyhow::Result<()> {
+pub async fn set_password_by_email(
+    pool: &MySqlPool,
+    email: &str,
+    password_auth: &str,
+) -> anyhow::Result<()> {
     sqlx::query("UPDATE users SET password_hash = ? WHERE email = ?")
         .bind(password_auth)
         .bind(email)

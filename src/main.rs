@@ -1,8 +1,10 @@
-use std::time::Duration;
+use std::{any::Any, time::Duration};
 
-use axum::Router;
+use axum::{error_handling::HandleErrorLayer, http::StatusCode, response::{IntoResponse, Response}, BoxError, Router};
+use handlers::ErrorTypes;
 use sqlx::mysql::MySqlPoolOptions;
-use tower_http::cors::CorsLayer;
+use tower::{buffer::BufferLayer, limit::RateLimitLayer, ServiceBuilder};
+use tower_http::{catch_panic::CatchPanicLayer, cors::CorsLayer};
 
 mod crypt;
 mod db;
@@ -27,6 +29,26 @@ crypt - модуль, в котором находятся различные т
 2. password - очевидно
 3. token - шифрование JWt и Refresh tokenов и их проверка на валидность (т.е не подделан и срок годности не истек)
 */
+
+fn internal_server_error_handler(err: Box<dyn Any + Send + 'static>) -> Response {
+    let details = if let Some(s) = err.downcast_ref::<String>() {
+        s.clone()
+    } else if let Some(s) = err.downcast_ref::<&str>() {
+        s.to_string()
+    } else {
+        "Unknown panic message".to_string()
+    };
+    println!("Internal server error catched: {}", details);
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        axum::Json(handlers::ErrorResponse::new(
+            ErrorTypes::InternalError,
+            &details,
+        )), // Should not panic, because struct is always valid for converting into JSON
+    )
+        .into_response()
+}
+
 
 #[tokio::main]
 async fn main() {
@@ -65,8 +87,28 @@ async fn main() {
             "/auth/reset",
             axum::routing::post(handlers::password::create_reset),
         )
-        .route("/auth/reset/password", axum::routing::post(handlers::password::reset_password))
+        .route(
+            "/auth/reset/password",
+            axum::routing::post(handlers::password::reset_password),
+        )
         .layer(CorsLayer::permissive()) // Для того чтоб CORS мозг не ебал
+        .layer(CatchPanicLayer::custom(internal_server_error_handler))
+        .layer(
+            ServiceBuilder::new()
+                .layer(HandleErrorLayer::new(|err: BoxError| async move {
+                    // So compiler wont complain about some Infallable Trait shit
+                    eprintln!("{}", err);
+                    (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        axum::Json(handlers::ErrorResponse::new(
+                            ErrorTypes::InternalError,
+                            "Internal error occured",
+                        )),
+                    )
+                }))
+                .layer(BufferLayer::new(1024)) // Means it can process 1024 messages before backpressure is applied TODO: Adjust
+                .layer(RateLimitLayer::new(5, Duration::from_secs(1))), // Rate limti does not impl Clone, so we need to use BufferLayer TODO: Adjust
+        )
         .with_state(mysql_pool);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8081").await.unwrap(); // TODO: port from dotenv

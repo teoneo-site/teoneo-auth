@@ -19,10 +19,11 @@ pub async fn validate_token(pool: &MySqlPool, token: &str) -> anyhow::Result<Str
 
 pub async fn remove_token(pool: &MySqlPool, token: &str) {
     match sqlx::query("DELETE FROM reset_tokens WHERE token = ?")
-    .bind(token)
-    .execute(pool)
-    .await {
-        Ok(_) => {},
+        .bind(token)
+        .execute(pool)
+        .await
+    {
+        Ok(_) => {}
         Err(why) => {
             eprintln!("Why remove failed: {}", why);
             {}

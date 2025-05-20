@@ -14,7 +14,9 @@ use sha2::{Digest, Sha256};
 use sqlx::MySqlPool;
 
 use crate::{
-    crypt::{self, encryption::create_reset_token}, db, handlers::{ErrorResponse, ErrorTypes}
+    crypt::{self, encryption::create_reset_token},
+    db,
+    handlers::{ErrorResponse, ErrorTypes},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -113,14 +115,19 @@ pub struct ResetPasswordBody {
     password: String,
 }
 
-pub async fn reset_password(State(pool): State<MySqlPool>, Json(data) : Json<ResetPasswordBody>) -> anyhow::Result<Response, Response> {
+pub async fn reset_password(
+    State(pool): State<MySqlPool>,
+    Json(data): Json<ResetPasswordBody>,
+) -> anyhow::Result<Response, Response> {
     match db::reset_tokens::validate_token(&pool, &data.token).await {
         Ok(email) => {
             let hashed_password = crypt::password::hash_password(&data.password);
-            db::users::set_password_by_email(&pool, &email, &hashed_password).await.unwrap();  
+            db::users::set_password_by_email(&pool, &email, &hashed_password)
+                .await
+                .unwrap();
             db::reset_tokens::remove_token(&pool, &data.token).await;
-            return Ok((StatusCode::OK).into_response())
-        },
+            return Ok((StatusCode::OK).into_response());
+        }
         Err(why) => {
             eprintln!("{}", why);
             db::reset_tokens::remove_token(&pool, &data.token).await;

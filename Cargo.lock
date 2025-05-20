@@ -2200,6 +2200,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tokio-util",
+ "tower",
  "tower-http",
  "tracing-subscriber",
 ]
@@ -2354,6 +2355,7 @@ dependencies = [
  "pin-project-lite",
  "sync_wrapper",
  "tokio",
+ "tokio-util",
  "tower-layer",
  "tower-service",
  "tracing",
@@ -2367,10 +2369,14 @@ checksum = "403fa3b783d4b626a8ad51d766ab03cb6d2dbfc46b1c5d4448395e6628dc9697"
 dependencies = [
  "bitflags",
  "bytes",
+ "futures-util",
  "http",
+ "http-body",
+ "http-body-util",
  "pin-project-lite",
  "tower-layer",
  "tower-service",
+ "tracing",
 ]
 
 [[package]]
