@@ -12,3 +12,14 @@ pub fn create_reset_token() -> String {
     let result = hasher.finalize();
     hex::encode(result)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn check_reset_token_length() {
+        let result = create_reset_token();
+        assert_eq!(result.len(), 64);
+    }
+}
