@@ -79,12 +79,12 @@ pub async fn create_reset(
 
             let creds = Credentials::new(
                 "d4nikla@yandex.ru".to_owned(),
-                "ijjwqgxtuyodnihr".to_owned(),
+                std::env::var("YANDEX_PASSWORD").unwrap(),
             );
 
             let mailer = SmtpTransport::relay("smtp.yandex.ru")
                 .unwrap()
-                .port(465) // или 465
+                .port(465) 
                 .credentials(creds)
                 .build();
 
