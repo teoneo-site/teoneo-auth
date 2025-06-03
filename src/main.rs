@@ -114,3 +114,22 @@ async fn main() {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8081").await.unwrap(); // TODO: port from dotenv
     axum::serve(listener, app).await.unwrap();
 }
+
+
+/*
+version: "3.8"
+
+services:
+  teoneo-auth:
+    image: teoneo-auth
+    ports:
+      - "8081:8081"
+    environment:
+      - AES_KEY=f3c2a1e4b5d6e7f8a9b0c1d2e3f4a5b6
+      - SECRET_WORD_JWT=VLADIVOSTOK
+      - SECRET_WORD_REFRESH=VLADIVOSTOK2000
+      # Добавь свои переменные окружения сюда
+      # Пример:
+      # - DATABASE_URL=postgres://user:pass@db:5432/mydb
+      # - SECRET_KEY=supersecret
+*/
