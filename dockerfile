@@ -19,8 +19,10 @@ RUN cargo build --release
 # ---- Runtime Stage ----
 FROM ubuntu:latest
 
-# Install necessary system dependencies (if needed, e.g., openssl)
-RUN apt-get update
+# Install necessary system dependencies (e.g., openssl and CA certs)
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN useradd -m appuser

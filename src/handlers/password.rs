@@ -76,7 +76,7 @@ pub async fn create_reset(
                 .to(format!("Client <{}>", data.email).parse().unwrap())
                 .subject("Password Reset")
                 .header(ContentType::TEXT_PLAIN)
-                .body(format!("You have recently requested a password reset:\nLink: http://5.129.200.137/reset?token={}", token))
+                .body(format!("You have recently requested a password reset:\nLink: http://5.129.200.137/new-password?token={}", token))
                 .unwrap();
 
             let creds = Credentials::new(
