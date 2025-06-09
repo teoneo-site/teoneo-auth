@@ -55,12 +55,12 @@ async fn main() {
     tracing_subscriber::fmt::init(); // Для логирования всяких штук
     dotenv::dotenv().ok();
 
-    let connect_str = "mysql://root:root@localhost:3306/teoneo"; // TODO: get from dotenv
+    let connect_str = std::env::var("DATABASE_URL").unwrap(); // TODO: get from dotenv
 
     let mysql_pool = MySqlPoolOptions::new()
         .max_connections(10) // Надо подумать какое число тут использовать, мб max_hardware_concurrency()
         .acquire_timeout(Duration::from_secs(10))
-        .connect(connect_str)
+        .connect(&connect_str)
         .await
         .expect("Cant connect");
 

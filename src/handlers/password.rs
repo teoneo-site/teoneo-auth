@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use axum::{
     extract::{Query, State},
     http::StatusCode,
@@ -86,6 +88,7 @@ pub async fn create_reset(
                 .unwrap()
                 .port(465) 
                 .credentials(creds)
+                .timeout(Duration::from_secs(5).into())
                 .build();
 
             // Send the email
