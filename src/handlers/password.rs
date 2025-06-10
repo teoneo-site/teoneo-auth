@@ -91,7 +91,7 @@ pub async fn create_reset(
                 .timeout(Duration::from_secs(5).into())
                 .build();
 
-            // Send the email
+            // Send the email, spawn_blocking is used so send() function doesn't block tokio async threads
             let mail_send_result = tokio::task::spawn_blocking(move || {
                 mailer.send(&email)
             }).await;
