@@ -92,9 +92,13 @@ pub async fn create_reset(
                 .build();
 
             // Send the email
-            match mailer.send(&email) {
-                Ok(_) => println!("Email sent successfully!"),
-                Err(e) => eprintln!("Could not send email: {e:?}"),
+            let mail_send_result = tokio::task::spawn_blocking(move || {
+                mailer.send(&email)
+            }).await;
+            match mail_send_result {
+                Ok(Ok(_)) => println!("Email sent successfully!"),
+                Ok(Err(e)) => eprintln!("Could not send email: {e:?}"),
+                Err(join_err) => eprintln!("Task panicked: {join_err:?}"),
             }
             return Ok((StatusCode::OK).into_response());
         }
