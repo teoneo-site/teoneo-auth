@@ -41,7 +41,7 @@ pub struct OAuthData {
 }
 
 
-pub async fn oauth_authorize(State(state) : State<AppState>, Json(data) : Json<OAuthData>, cookies : CookieJar) -> Result<Response, Response> {
+pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar, Json(data) : Json<OAuthData>) -> Result<Response, Response> {
     let http_client = reqwest::ClientBuilder::new()
         .redirect(reqwest::redirect::Policy::none())
         .build()
