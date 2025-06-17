@@ -5,7 +5,7 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
+use sqlx::{MySql, MySqlPool, Pool};
 
 use crate::{crypt, db};
 
@@ -19,7 +19,7 @@ pub struct UserRegister {
 }
 
 pub async fn register(
-    State(pool): State<MySqlPool>,
+    State(pool): State<Pool<MySql>>,
     Json(user_data): Json<UserRegister>,
 ) -> Result<Response, Response> {
     if (user_data.username.len() > 32 || user_data.username.is_empty())

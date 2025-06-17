@@ -7,6 +7,7 @@ pub mod password;
 pub mod register;
 pub mod token;
 pub mod types;
+pub mod oauth;
 
 // Errors stuff
 #[derive(Serialize, Deserialize)]
@@ -37,6 +38,7 @@ pub enum ErrorTypes {
     UserAlreadyExists,
     RefreshTokenExpired,
     InvalidResetToken,
+    CookieMissing,
 }
 
 impl Display for ErrorTypes {
@@ -50,6 +52,7 @@ impl Display for ErrorTypes {
             Self::UserAlreadyExists => write!(f, "user_alread_exists"),
             Self::RefreshTokenExpired => write!(f, "refresh_token_expired"),
             Self::InvalidResetToken => write!(f, "invalid_reset_token"),
+            Self::CookieMissing => write!(f, "cookie_missing")
         }
     }
 }
