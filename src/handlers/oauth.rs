@@ -1,14 +1,12 @@
 use axum::{
-    extract::{Query, State},
-    http::{HeaderMap, StatusCode},
+    extract::State,
+    http::StatusCode,
     response::{IntoResponse, Redirect, Response},
     Json,
 };
 use axum_extra::extract::{cookie::Cookie, CookieJar};
-use once_cell::sync::Lazy;
-use openidconnect::{core::{CoreClient, CoreProviderMetadata, CoreResponseType}, AuthenticationFlow, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, RedirectUrl, Scope};
+use openidconnect::{core::CoreResponseType, AuthenticationFlow, AuthorizationCode, CsrfToken, Nonce, Scope};
 use serde::{Deserialize, Serialize};
-use sqlx::MySqlPool;
 use utoipa::ToSchema;
 
 use crate::{crypt, db, AppState, OIDCClient};
@@ -108,7 +106,7 @@ pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar
 
         db::tokens::create_token(&state.pool, user_id, &refresh_token)
             .await
-            .unwrap(); // I mean it cant really fail but anyway TODO: handle this
+            .unwrap();
         let resp = TokensPayload {
             jwt_token,
             refresh_token,

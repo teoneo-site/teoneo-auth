@@ -44,7 +44,7 @@ pub async fn register(
             StatusCode::BAD_REQUEST,
             axum::Json(ErrorResponse::new(
                 ErrorTypes::BadData,
-                "Provided data is bad",
+                "Provided data is incorrectly formatted. Password is < 4 > 64. Username <= 32",
             )),
         )
             .into_response());
@@ -65,7 +65,7 @@ pub async fn register(
 
             db::tokens::create_token(&pool, id, &refresh_token)
                 .await
-                .unwrap(); // May wanna handle this
+                .unwrap();
 
             let resp = TokensPayload {
                 jwt_token,

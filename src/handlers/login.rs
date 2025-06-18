@@ -42,7 +42,7 @@ pub async fn login(
             StatusCode::BAD_REQUEST,
             axum::Json(ErrorResponse::new(
                 ErrorTypes::BadData,
-                "Provided data is bad",
+                "Provided data is incorrectly formatted. Password must be < 4 > 64 and email not empty",
             )),
         )
             .into_response());
@@ -55,7 +55,7 @@ pub async fn login(
                 StatusCode::BAD_REQUEST,
                 axum::Json(ErrorResponse::new(
                     ErrorTypes::UserNotExists,
-                    "User does not exist, please register",
+                    "User does not exist. Can't get their email",
                 )),
             )
                 .into_response());

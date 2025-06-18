@@ -193,13 +193,16 @@ async fn get_state(connect_str: &str) -> AppState {
 async fn main() {
     tracing_subscriber::fmt::init(); // Для логирования всяких штук
     dotenv::dotenv().ok();
-
+    tracing::info!("Starting auth service");
+    tracing::info!("Loaded DATABASE_URL: {:?}", std::env::var("DATABASE_URL"));
+    tracing::info!("Loaded GOOGLE_CLIENT_ID: {:?}", std::env::var("GOOGLE_CLIENT_ID"));
     let connect_str = std::env::var("DATABASE_URL").unwrap(); // TODO: get from dotenv
 
     let state = get_state(&connect_str).await;
     let app = get_router(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:8081").await.unwrap(); // TODO: port from dotenv
+    tracing::info!("Server started on port 8081");
     axum::serve(listener, app).await.unwrap();
 }
 

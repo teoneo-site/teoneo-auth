@@ -47,7 +47,7 @@ pub async fn validate_reset(
                 StatusCode::FORBIDDEN,
                 axum::Json(ErrorResponse::new(
                     ErrorTypes::InvalidResetToken,
-                    "Reset token is no longer valid",
+                    &format!("Reset token is no longer valid: {}", why),
                 )),
             )
                 .into_response());
@@ -129,7 +129,7 @@ pub async fn create_reset(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 axum::Json(ErrorResponse::new(
                     ErrorTypes::InternalError,
-                    "Could not insert a new token",
+                    "Could not insert a reset token. What's up with the database",
                 )),
             )
                 .into_response());

@@ -54,7 +54,7 @@ pub async fn update_jwt_token(
                 StatusCode::FORBIDDEN,
                 axum::Json(ErrorResponse::new(
                     ErrorTypes::RefreshTokenExpired,
-                    "Please, log in again",
+                    "Refresh token is expired. User must be kicked out of the account.",
                 )),
             )
                 .into_response());
@@ -71,7 +71,7 @@ pub async fn update_jwt_token(
                     StatusCode::FORBIDDEN,
                     axum::Json(ErrorResponse::new(
                         ErrorTypes::RefreshTokenExpired,
-                        "Please, log in again",
+                        &format!("Refresh token is expired. User must be kicked out of the account: {}", why),
                     )),
                 )
                     .into_response());
@@ -112,7 +112,7 @@ pub async fn validate(Query(data): Query<QueryValidate>) -> Result<Response, Res
                 StatusCode::UNAUTHORIZED,
                 axum::Json(ErrorResponse::new(
                     ErrorTypes::JwtTokenExpired,
-                    "Update JWT token",
+                    "JWT token is expired/Incorrect. It must be updated",
                 )),
             )
                 .into_response());
