@@ -6,30 +6,12 @@ use openidconnect::{core::{CoreClient, CoreProviderMetadata}, Client, ClientId, 
 use sqlx::{mysql::MySqlPoolOptions, MySql, Pool};
 use tower::{buffer::BufferLayer, limit::RateLimitLayer, ServiceBuilder};
 use tower_http::{catch_panic::CatchPanicLayer, cors::CorsLayer};
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 mod crypt;
 mod db;
 mod handlers;
-
-// Если с каких-то других микросервисов будет приходить ошибка 401 - значит нужно обновить JWT Token
-// И только при 403 ошибке нужно принудительно выкидывать пользователя из аккаунта
-// Таким образом достигается максимальная безопасность
-
-/*  ## Про модули:
-db - используется для написания функций для взаимодействия с базой данных
-1. tokens - взаимодействие с таблицей refresh_tokens
-2. users - взаимодействие с таблицей users
-
-handlers - для написания функций для разных типов эндпоинтов
-1. login - очевидео
-2. register - очевидно
-3. token - для обновления токенов и выход из аккаунта (т.к выход из аккаунта тесно связан с токенами)
-
-crypt - модуль, в котором находятся различные типы шифрования для различных вещей
-1. encryption - хз зачем
-2. password - очевидно
-3. token - шифрование JWt и Refresh tokenов и их проверка на валидность (т.е не подделан и срок годности не истек)
-*/
 
 fn internal_server_error_handler(err: Box<dyn Any + Send + 'static>) -> Response {
     let details = if let Some(s) = err.downcast_ref::<String>() {
@@ -78,6 +60,46 @@ impl FromRef<AppState> for OIDCClient {
         state.oauth_client.clone()
     }
 }
+
+struct SecurityAddon;
+impl utoipa::Modify for SecurityAddon {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "api_key",
+                utoipa::openapi::security::SecurityScheme::ApiKey(
+                    utoipa::openapi::security::ApiKey::Header(
+                        utoipa::openapi::security::ApiKeyValue::new("VLADIVOSTOK85000")
+                    )
+                ),
+            );
+        }
+    }
+}
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        handlers::login::login,
+        handlers::register::register,
+        handlers::token::validate,
+        handlers::token::update_jwt_token,
+        handlers::token::logout,
+        handlers::password::create_reset,
+        handlers::password::reset_password,
+        handlers::password::validate_reset,
+        handlers::oauth::oauth_redirect,
+        handlers::oauth::oauth_authorize
+    ),
+    // components(
+    //     schemas(UserLogin, ErrorResponse, TokensPayload)
+    // ),
+    modifiers(&SecurityAddon),
+    tags(
+        (name = "NeoTeo-Auth", description = "Один статус код может обозначать несколько ошибок, обозначены через ;. Ошибка 5xx обозначает непредвиденную ошибку. В таком случае в error_message содержится текст ошибки Раста")
+    )
+)]
+struct ApiDoc;
 
 
 fn get_router(state: AppState) -> Router {
@@ -134,11 +156,11 @@ fn get_router(state: AppState) -> Router {
             .layer(BufferLayer::new(1024)) // Means it can process 1024 messages before backpressure is applied TODO: Adjust
             .layer(RateLimitLayer::new(5, Duration::from_secs(1))), // Rate limti does not impl Clone, so we need to use BufferLayer TODO: Adjust
     )
+    .merge(SwaggerUi::new("/docs").url("/api-doc/openapi.json", ApiDoc::openapi()))
     .with_state(state)
 }
 
 async fn get_state(connect_str: &str) -> AppState {
-
     let pool = MySqlPoolOptions::new()
         .max_connections(10) // Надо подумать какое число тут использовать, мб max_hardware_concurrency()
         .acquire_timeout(Duration::from_secs(10))

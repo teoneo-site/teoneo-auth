@@ -9,13 +9,22 @@ use once_cell::sync::Lazy;
 use openidconnect::{core::{CoreClient, CoreProviderMetadata, CoreResponseType}, AuthenticationFlow, AuthorizationCode, Client, ClientId, ClientSecret, CsrfToken, IssuerUrl, Nonce, RedirectUrl, Scope};
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
+use utoipa::ToSchema;
 
 use crate::{crypt, db, AppState, OIDCClient};
 
 use super::{types::TokensPayload, ErrorResponse, ErrorTypes};
 
 
-
+#[utoipa::path(
+    get,
+    description = "эндпоинт перенаправляет пользователя на страницу авторизации в Гугл",
+    path = "/auth/oauth/redirect/google",
+    responses(
+        (status = 103, description = "Перенаправление"),
+        (status = 500, description = "Возникла ошибка какая-то внутри сервера"),
+    )
+)]
 pub async fn oauth_redirect(State(client) : State<OIDCClient>) -> (CookieJar, Redirect) {
     let (auth_url, csrf, nonce) = client
         .authorize_url(AuthenticationFlow::<CoreResponseType>::AuthorizationCode, CsrfToken::new_random, Nonce::new_random)
@@ -34,13 +43,23 @@ pub async fn oauth_redirect(State(client) : State<OIDCClient>) -> (CookieJar, Re
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct OAuthData {
     state: String,
     code: String,
 }
 
 
+#[utoipa::path(
+    post,
+    description = "используется после коллбэка для авторизации (для получения токенов) с помощью данных, переданных от гугла",
+    path = "/auth/oauth/callback/google",
+    request_body = OAuthData,
+    responses(
+        (status = 200, description = "Успешно. Был совершен вход в аккаунт", body = TokensPayload),
+        (status = 201, description = "Успешно. Была совершена регистрация аккаунта (Если не было).", body = TokensPayload),
+    )
+)]
 pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar, Json(data) : Json<OAuthData>) -> Result<Response, Response> {
     let http_client = reqwest::ClientBuilder::new()
         .redirect(reqwest::redirect::Policy::none())

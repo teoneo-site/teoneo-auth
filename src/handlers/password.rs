@@ -10,10 +10,9 @@ use lettre::{
     message::header::ContentType, transport::smtp::authentication::Credentials, Message,
     SmtpTransport, Transport,
 };
-use rand::{distr::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
-use sha2::{Digest, Sha256};
 use sqlx::MySqlPool;
+use utoipa::ToSchema;
 
 use crate::{
     crypt::{self, encryption::create_reset_token},
@@ -21,11 +20,21 @@ use crate::{
     handlers::{ErrorResponse, ErrorTypes},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ValidateTokenBody {
     token: String,
 }
 
+#[utoipa::path(
+    post,
+    description = "Используется для подтверждения того, что ресет токен еще не истек/не использован",
+    path = "/auth/reset/validate",
+    request_body = ValidateTokenBody,
+    responses(
+        (status = 200, description = "Все валидно"),
+        (status = 403, description = "Ресет токен истек/был использован", body = ErrorResponse),
+    )
+)]
 pub async fn validate_reset(
     State(pool): State<MySqlPool>,
     Query(token_data): Query<ValidateTokenBody>,
@@ -46,11 +55,23 @@ pub async fn validate_reset(
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct CreateResetBody {
     email: String,
 }
 
+
+#[utoipa::path(
+    post,
+    description = "Используется при нажатии на сбросить пароль. Создает reset токен и отсылает сообщение на почту",
+    path = "/auth/reset",
+    request_body = CreateResetBody,
+    responses(
+        (status = 200, description = "Сообщение было успешно отправлено (наверное)"),
+        (status = 500, description = "Возникла ошибка при создании ресет токена в БД", body = ErrorResponse),
+        (status = 404, description = "Юзера не существует", body = ErrorResponse)
+    )
+)]
 pub async fn create_reset(
     State(pool): State<MySqlPool>,
     Json(data): Json<CreateResetBody>,
@@ -116,12 +137,23 @@ pub async fn create_reset(
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ResetPasswordBody {
     token: String,
     password: String,
 }
 
+
+#[utoipa::path(
+    post,
+    description = "Используется при переходе по ссылке из почты и отправки нового пароля (изменяет пароль пользователя)",
+    path = "/auth/reset/password",
+    request_body = ResetPasswordBody,
+    responses(
+        (status = 200, description = "Пароль успешно обновлен"),
+        (status = 403, description = "Ресет токен истек. Пользователю снова надо запросить восстановление пароля", body = ErrorResponse),
+    )
+)]
 pub async fn reset_password(
     State(pool): State<MySqlPool>,
     Json(data): Json<ResetPasswordBody>,

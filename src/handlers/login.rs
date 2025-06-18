@@ -6,17 +6,29 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
+use utoipa::ToSchema;
 
 use crate::{crypt, db};
 
 use super::{types::TokensPayload, ErrorResponse, ErrorTypes};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct UserLogin {
     email: String,
     password: String,
 }
 
+
+#[utoipa::path(
+    post,
+    path = "/auth/login",
+    request_body = UserLogin,
+    responses(
+        (status = 200, description = "Успешный вход в аккаунт", body = TokensPayload),
+        (status = 400, description = "Какое-то из полей слишком короткое/длинное и т.д;Пользователя не существует", body = ErrorResponse),
+        (status = 401, description = "Не получилось войти в аккаунт, данные некорректны", body = ErrorResponse)
+    )
+)]
 pub async fn login(
     State(pool): State<MySqlPool>,
     Json(user_data): Json<UserLogin>,

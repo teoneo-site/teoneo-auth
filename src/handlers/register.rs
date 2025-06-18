@@ -5,19 +5,31 @@ use axum::{
     Json,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::{MySql, MySqlPool, Pool};
+use sqlx::{MySql, Pool};
+use utoipa::ToSchema;
 
 use crate::{crypt, db};
 
 use super::{types::TokensPayload, ErrorResponse, ErrorTypes};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct UserRegister {
     pub username: String,
     pub email: String,
     pub password: String,
 }
 
+
+#[utoipa::path(
+    post,
+    path = "/auth/register",
+    request_body = UserRegister,
+    responses(
+        (status = 201, description = "Успешная регистрация", body = TokensPayload),
+        (status = 400, description = "Какое-то из полей слишком короткое/длинное и т.д;Пользователя не существует", body = ErrorResponse),
+        (status = 409, description = "Не получилось создать аккаунт, такой уже существует (дубликат почты)", body = ErrorResponse)
+    )
+)]
 pub async fn register(
     State(pool): State<Pool<MySql>>,
     Json(user_data): Json<UserRegister>,

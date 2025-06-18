@@ -6,6 +6,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
+use utoipa::ToSchema;
 
 use crate::{crypt, db};
 
@@ -16,13 +17,26 @@ pub struct QueryValidate {
     token: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct LogoutBody {
     refresh_token: String,
 }
 
 // /token [GET] - Эндпоинт, предназначенный для обновления expired JWT Token'а с помощью Refresh Token
 // Если запрос сюда возвращает 403, то со стороны фронтенд нужно выйти из аккаунта, так как refresh token закончился
+#[utoipa::path(
+    get,
+    description = "Эндпоинт, предназначенный для обновления expired JWT Token'а с помощью Refresh Token. Токен поставляется в Хедере 'Authorization'",
+    path = "/auth/token",
+    params(
+        ("Authorization" = String, Header, description = "JWT")
+    ),
+    responses(
+        (status = 200, description = "Токен обновлен. Присылается просто токен текстом", body = String),
+        (status = 403, description = "Refresh token истек, нужно выкинуть юзера из акка; При проверке рефреша произошла ошибка", body = ErrorResponse),
+        (status = 400, description = "Нет заголовка Authorization", body = ErrorResponse)
+    )
+)]
 pub async fn update_jwt_token(
     State(pool): State<MySqlPool>,
     headers: HeaderMap,
@@ -76,6 +90,19 @@ pub async fn update_jwt_token(
 
 // /validate [GET] - Эндпоинт для проверки валидности JWT Токена, если возвращает 401, это значит
 // Что нужно обновить JWT Токен через /token
+#[utoipa::path(
+    get,
+    path = "/auth/validate",
+    description = "Эндпоинт для проверки валидности JWT Токена",
+    // request_body = UserRegister,
+    params (
+        ("token" = String, Query, description = "JWT токен пользователя")
+    ),
+    responses(
+        (status = 201, description = "Успешная регистрация"),
+        (status = 401, description = "Токен истек", body = ErrorResponse),
+    )
+)]
 pub async fn validate(Query(data): Query<QueryValidate>) -> Result<Response, Response> {
     match crypt::token::verify_jwt_token(&data.token) {
         Ok(_) => return Ok((StatusCode::OK).into_response()),
@@ -94,6 +121,18 @@ pub async fn validate(Query(data): Query<QueryValidate>) -> Result<Response, Res
 }
 
 // /logout [POST] - эндпоинт для выхода из аккаунта
+#[utoipa::path(
+    post,
+    description = "Эндпоинт для выхода из аккаунта. Токен поставляется в хедерах",
+    path = "/auth/logout",
+    params(
+        ("Authorization" = String, Header, description = "JWT")
+    ),
+    request_body = LogoutBody,
+    responses(
+        (status = 200, description = "Успешный выход"),
+    )
+)]
 pub async fn logout(
     State(pool): State<MySqlPool>,
     Json(data): Json<LogoutBody>,

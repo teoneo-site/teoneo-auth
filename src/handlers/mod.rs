@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 pub mod login;
 pub mod password;
@@ -10,7 +11,7 @@ pub mod types;
 pub mod oauth;
 
 // Errors stuff
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct ErrorResponse {
     error_type: String,
     error_msg: String,
