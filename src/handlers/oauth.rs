@@ -9,10 +9,7 @@ use openidconnect::{core::CoreResponseType, AuthenticationFlow, AuthorizationCod
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{crypt, db, AppState, OIDCClient};
-
-use super::{types::TokensPayload, ErrorResponse, ErrorTypes};
-
+use crate::{common::error::{ErrorResponse, ErrorTypes}, crypt, db, handlers::auth::TokensPayload, AppState, OIDCClient};
 
 #[utoipa::path(
     get,
@@ -98,13 +95,13 @@ pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar
     
     let email = id_tokens_claims.email().unwrap().to_string();
 
-    if let Ok(_) = db::users::email_exists(&state.pool, &email).await { // Means user is already registered
-        let user_id = db::users::id_by_email(&state.pool, &email).await.unwrap();
+    if let Ok(_) = db::users::email_exists(&state.basic.pool, &email).await { // Means user is already registered
+        let user_id = db::users::id_by_email(&state.basic.pool, &email).await.unwrap();
 
         let jwt_token = crypt::token::make_jwt_token(user_id);
         let refresh_token = crypt::token::make_refresh_token(user_id);
 
-        db::tokens::create_token(&state.pool, user_id, &refresh_token)
+        db::tokens::create_token(&state.basic.pool, user_id, &refresh_token)
             .await
             .unwrap();
         let resp = TokensPayload {
@@ -120,7 +117,7 @@ pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar
     let password_hash = crypt::password::hash_password(&password);
 
     let id = db::users::create_user(
-        &state.pool,
+        &state.basic.pool,
         &username,
         &email,
         &password_hash,
@@ -130,7 +127,7 @@ pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar
     let jwt_token = crypt::token::make_jwt_token(id);
     let refresh_token = crypt::token::make_refresh_token(id);
 
-    db::tokens::create_token(&state.pool, id, &refresh_token)
+    db::tokens::create_token(&state.basic.pool, id, &refresh_token)
         .await
         .unwrap(); // May wanna handle this
 
