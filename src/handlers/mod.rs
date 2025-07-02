@@ -7,7 +7,7 @@ use crate::common::error::{ErrorResponse, ErrorTypes};
 
 pub mod auth;
 pub mod oauth;
-
+pub mod users;
 
 pub fn error_response(
     status: StatusCode,

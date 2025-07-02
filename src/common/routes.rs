@@ -52,11 +52,23 @@ fn oauth_routes() -> Router<AppState> {
     ) 
 }
 
+fn users_routes() -> Router<AppState> {
+    Router::new()
+    .route(
+        "/user/info",
+        axum::routing::get(handlers::users::get_user_info_and_courses),
+    )
+    .route(
+        "/user/stats",
+        axum::routing::get(handlers::users::get_user_stats),
+    )
+}
 
 pub fn get_router(state: AppState) -> Router {
     Router::new()
     .merge(auth_routes())
     .merge(oauth_routes())
+    .merge(users_routes())
     .layer(CorsLayer::permissive()) // Для того чтоб CORS мозг не ебал
     .layer(CatchPanicLayer::custom(internal_server_error_handler))
     .layer(

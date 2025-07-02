@@ -52,6 +52,7 @@ pub enum ErrorTypes {
     UserAlreadyExists,
     RefreshTokenExpired,
     CookieMissing,
+    NoAuthHeader
 }
 
 impl ErrorTypes {
@@ -65,7 +66,8 @@ impl ErrorTypes {
             ErrorTypes::InvalidResetToken => "invalid_reset_token",
             ErrorTypes::UserAlreadyExists => "user_already_exists",
             ErrorTypes::RefreshTokenExpired => "refresh_token_expired",
-            ErrorTypes::CookieMissing => "cookie_missing"
+            ErrorTypes::CookieMissing => "cookie_missing",
+            ErrorTypes::NoAuthHeader => "no_auth_header"
         }
     }
 }

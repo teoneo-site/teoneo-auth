@@ -15,7 +15,14 @@ pub struct Claims {
     pub exp: i64,
 }
 
-impl<S: std::marker::Sync> FromRequestParts<S> for Claims {
+
+#[derive(Serialize, Deserialize)]
+pub struct AuthHeader {
+    pub claims: Claims,
+    pub token: String,
+}
+
+impl<S: std::marker::Sync> FromRequestParts<S> for AuthHeader {
     type Rejection = Response;
 
     async fn from_request_parts(
@@ -29,24 +36,24 @@ impl<S: std::marker::Sync> FromRequestParts<S> for Claims {
             .and_then(|s| s.split_whitespace().last())
             .ok_or("Missing header")
             .map_err(|why| {
-                eprintln!("{}", why);
+                tracing::error!("{}", why);
                 (
                     StatusCode::BAD_REQUEST,
                     axum::Json(ErrorResponse::new(
-                        ErrorTypes::InternalError,
+                        ErrorTypes::NoAuthHeader,
                         "No auth header",
                     )),
                 )
                     .into_response()
             })?;
 
-        Ok(decode::<Claims>(
+        let claims = decode::<Claims>(
             token,
             &DecodingKey::from_secret(std::env::var("SECRET_WORD_JWT").unwrap().as_ref()),
             &Validation::default(),
         )
         .map_err(|err| {
-            eprintln!("Could not validate: {}", err);
+            tracing::error!("Could not validate: {}", err);
             (
                 StatusCode::UNAUTHORIZED,
                 axum::Json(ErrorResponse::new(
@@ -56,9 +63,15 @@ impl<S: std::marker::Sync> FromRequestParts<S> for Claims {
             )
                 .into_response()
         })?
-        .claims)
+        .claims;
+
+        Ok(AuthHeader {
+            claims,
+            token: token.to_owned(),
+        })
     }
 }
+
 
 pub fn make_jwt_token(user_id: u32) -> String {
     let claims = Claims {

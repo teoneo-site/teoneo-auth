@@ -31,7 +31,10 @@ impl utoipa::Modify for SecurityAddon {
         handlers::auth::reset_password,
         handlers::auth::validate_reset,
         handlers::oauth::oauth_redirect,
-        handlers::oauth::oauth_authorize
+        handlers::oauth::oauth_authorize,
+
+        handlers::users::get_user_info_and_courses,
+        handlers::users::get_user_stats
     ),
     // components(
     //     schemas(UserLogin, ErrorResponse, TokensPayload)

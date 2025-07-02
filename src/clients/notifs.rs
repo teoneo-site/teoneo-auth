@@ -18,6 +18,7 @@ pub async fn send_email(
     subject: &str,
     message: &str,
 ) -> anyhow::Result<()> {
+    todo!("Impl notifs service");
     let msg = MessageJSON {
         email: email.to_owned(),
         subject: subject.to_owned(),

@@ -13,6 +13,8 @@ mod db;
 mod handlers;
 mod common;
 mod clients;
+mod controllers;
+
 
 fn internal_server_error_handler(err: Box<dyn Any + Send + 'static>) -> Response {
     let details = if let Some(s) = err.downcast_ref::<String>() {

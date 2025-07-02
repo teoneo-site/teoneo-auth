@@ -1,5 +1,79 @@
+use anyhow::anyhow;
 use sqlx::MySqlPool;
 use sqlx::Row;
+
+use crate::controllers;
+use crate::controllers::users::UserInfo;
+use crate::controllers::users::UserInfoFull;
+use crate::controllers::users::UserStats;
+use crate::AppState;
+
+pub async fn get_user_info(state: &AppState, user_id: u32) -> anyhow::Result<UserInfo> {
+    let row = sqlx::query_as!(
+        UserInfo,
+        r#"
+        SELECT username, email
+        FROM users
+        WHERE id = ?
+        "#,
+        user_id
+    )
+    .fetch_one(&state.basic.pool)
+    .await?;
+
+    Ok(row)
+}
+
+// pub async fn get_user_stats(
+//     state: &AppState,
+//     user_id: u32,
+// ) -> anyhow::Result<UserStats> {
+//     let row = sqlx::query_as!(
+//         UserStats,
+//         r#"
+//         SELECT 
+//             (SELECT COUNT(DISTINCT course_id) 
+//              FROM user_courses 
+//              WHERE user_id = ?) AS courses_owned,
+            // (SELECT COUNT(DISTINCT m.course_id) 
+            //  FROM task_progress tp
+            //  JOIN tasks t ON tp.task_id = t.id
+            //  JOIN modules m ON t.module_id = m.id
+            //  WHERE tp.user_id = ?) AS courses_started,
+//             (
+//              SELECT COUNT(DISTINCT m.course_id)
+//              FROM modules m
+//              JOIN (
+//                  SELECT t.module_id, COUNT(*) as total_tasks
+//                  FROM tasks t
+//                  GROUP BY t.module_id
+//              ) t ON m.id = t.module_id
+//              JOIN (
+//                  SELECT t.module_id, COUNT(*) as completed_tasks
+//                  FROM task_progress tp
+//                  JOIN tasks t ON tp.task_id = t.id
+//                  WHERE tp.user_id = ? AND tp.status = 'SUCCESS'
+//                  GROUP BY t.module_id
+//              ) tc ON m.id = tc.module_id
+//              WHERE t.total_tasks = tc.completed_tasks
+//              GROUP BY m.course_id
+//              HAVING COUNT(DISTINCT m.id) = (
+//                  SELECT COUNT(*) 
+//                  FROM modules m2 
+//                  WHERE m2.course_id = m.course_id
+//              )
+//             ) AS courses_completed
+//         "#,
+//         user_id,
+//         user_id,
+//         user_id
+//     )
+//     .fetch_one(&state.basic.pool)
+//     .await?;
+
+//     Ok(row)
+// }
+
 
 pub async fn create_user(
     pool: &MySqlPool,
