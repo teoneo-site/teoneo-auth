@@ -16,7 +16,7 @@ use sqlx::{MySql, MySqlPool, Pool};
 use utoipa::ToSchema;
 
 use crate::{
-    common::error::{AppError, ErrorResponse, ErrorTypes}, crypt::{self, encryption::create_reset_token}, db, error_response, AppState, BasicState
+    clients, common::error::{AppError, ErrorResponse, ErrorTypes}, crypt::{self, encryption::create_reset_token}, db, error_response, AppState, BasicState
 };
 
 #[derive(Serialize, ToSchema)]
@@ -233,16 +233,16 @@ pub async fn create_reset(
 
     db::reset_tokens::insert_token(&state.basic.pool, &data.email, &token).await?;
 
-    // clients::notifs::send_email(
-    //     &state.connection_rmq,
-    //     &data.email,
-    //     "Восстановление пароля",
-    //     &format!(
-    //         "Ссылка для восстановления пароля: http://37.252.19.91/new-password?token={}",
-    //         token
-    //     ),
-    // )
-    // .await?;
+    clients::notifs::send_email(
+        &state.rabbit,
+        &data.email,
+        "Восстановление пароля",
+        &format!(
+            "Ссылка для восстановления пароля: http://5.129.200.137/new-password?token={}",
+            token
+        ),
+    )
+    .await?;
     return Ok((StatusCode::OK).into_response());
 }
 
