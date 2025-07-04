@@ -9,7 +9,7 @@ use openidconnect::{core::CoreResponseType, AuthenticationFlow, AuthorizationCod
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::{common::error::{ErrorResponse, ErrorTypes}, crypt, db, handlers::auth::TokensPayload, AppState, OIDCClient};
+use crate::{common::error::{AppError, ErrorResponse, ErrorTypes}, crypt, db, handlers::auth::TokensPayload, AppState, OIDCClient};
 
 #[utoipa::path(
     get,
@@ -55,25 +55,23 @@ pub struct OAuthData {
         (status = 201, description = "Успешно. Была совершена регистрация аккаунта (Если не было).", body = TokensPayload),
     )
 )]
-pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar, Json(data) : Json<OAuthData>) -> Result<Response, Response> {
+pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar, Json(data) : Json<OAuthData>) -> Result<Response, AppError> {
     let http_client = reqwest::ClientBuilder::new()
         .redirect(reqwest::redirect::Policy::none())
-        .build()
-        .unwrap();
+        .build()?;
 
     let token_response = state.oauth_client
         .exchange_code(AuthorizationCode::new(data.code))
-        .unwrap() 
+        ? 
         .request_async(&http_client)
-        .await.unwrap(); 
+        .await?;
     let id_token_verifier = state.oauth_client.id_token_verifier();
-
 
     let nonce_cookie = match cookies.get("nonce_token") {
         Some(cookie) => cookie,
         None => {
             eprintln!("Cookie are missing");
-            return Err((
+            return Ok((
             StatusCode::BAD_REQUEST,
             axum::Json(ErrorResponse::new(
                 ErrorTypes::CookieMissing,
@@ -91,19 +89,19 @@ pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar
         .id_token()
         .expect("Server did not return a token")
         .claims(&id_token_verifier, &nonce)
-        .unwrap();
+        ?;
     
     let email = id_tokens_claims.email().unwrap().to_string();
 
     if let Ok(_) = db::users::email_exists(&state.basic.pool, &email).await { // Means user is already registered
-        let user_id = db::users::id_by_email(&state.basic.pool, &email).await.unwrap();
+        let user_id = db::users::id_by_email(&state.basic.pool, &email).await?;
 
         let jwt_token = crypt::token::make_jwt_token(user_id);
         let refresh_token = crypt::token::make_refresh_token(user_id);
 
         db::tokens::create_token(&state.basic.pool, user_id, &refresh_token)
             .await
-            .unwrap();
+            ?;
         let resp = TokensPayload {
             jwt_token,
             refresh_token,
@@ -123,13 +121,13 @@ pub async fn oauth_authorize(State(state) : State<AppState>, cookies : CookieJar
         &password_hash,
     )
     
-    .await.unwrap(); // Не должно проваливаться, т.к пользователя в БД точно нет.
+    .await?; // Не должно проваливаться, т.к пользователя в БД точно нет.
     let jwt_token = crypt::token::make_jwt_token(id);
     let refresh_token = crypt::token::make_refresh_token(id);
 
     db::tokens::create_token(&state.basic.pool, id, &refresh_token)
         .await
-        .unwrap(); // May wanna handle this
+        ?; // May wanna handle this
 
     let resp = TokensPayload {
         jwt_token,
